@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="uz">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O‘zbekiston uchun dasturiy loyihalar — Farrux</title>
+<style>
+:root{font:17px/1.6 system-ui;color:#e8f2f1;background:#102122;color-scheme:dark}
+body{max-width:58rem;margin:0 auto;padding:3rem 1.25rem}
+header,section{padding:1.5rem 0;border-bottom:1px solid #45605c}
+h1{font-size:clamp(2rem,6vw,3.5rem);line-height:1.05;margin:.3em 0}h2{margin:0 0 .5em}
+a{color:#8fe2bd}button,input{font:inherit;padding:.35em .7em;border:1px solid #7faaa0;border-radius:.4em}
+button{cursor:pointer;background:#28534b;color:#fff}input{max-width:90%}li{margin:.35em 0}
+</style>
+<header>
+  <a href="https://github.com/NiKenguru">NiKenguru</a>
+  <button type="button" id="language" lang="ru">Русский</button>
+  <h1 id="title"></h1>
+  <p id="subtitle"></p>
+  <a href="https://github.com/NiKenguru/keng-releases">Keng POS</a> · <a href="/docs">OpenAPI</a>
+</header>
+<main>
+  <section>
+    <h2 id="ratesTitle"></h2>
+    <p id="ratesNote"></p>
+    <button type="button" id="load"></button>
+    <ul id="rates" aria-live="polite"></ul>
+  </section>
+  <section>
+    <h2 id="knowledgeTitle"></h2>
+    <p id="knowledgeNote"></p>
+    <form id="search">
+      <label for="question" id="questionLabel"></label>
+      <input id="question" required minlength="2" maxlength="160">
+      <button id="submit"></button>
+    </form>
+    <ul id="matches" aria-live="polite"></ul>
+  </section>
+</main>
+<script>
+const copy = {
+ uz: {title:"O‘zbekiston uchun dasturiy loyihalar", subtitle:"Python, JavaScript va mahalliy integratsiyalar", ratesTitle:"Valyuta kurslari", ratesNote:"Manba — O‘zbekiston Respublikasi Markaziy banki", load:"Kurslarni yuklash", knowledgeTitle:"Bilimlar bazasi", knowledgeNote:"Keng POS bo‘yicha namunaviy qo‘llanmani qidiring.", questionLabel:"Savol", submit:"Qidirish", empty:"Mos javob topilmadi.", error:"Ma’lumotni olib bo‘lmadi.", wait:"Yuklanmoqda…"},
+ ru: {title:"Проекты для Узбекистана", subtitle:"Python, JavaScript и локальные интеграции", ratesTitle:"Курсы валют", ratesNote:"Источник — Центральный банк Республики Узбекистан", load:"Загрузить курсы", knowledgeTitle:"База знаний", knowledgeNote:"Поиск по демонстрационному справочнику Keng POS.", questionLabel:"Вопрос", submit:"Найти", empty:"Подходящих ответов нет.", error:"Не удалось получить данные.", wait:"Загрузка…"}
+};
+const byId = id => document.getElementById(id);
+let lang = "uz";
+
+function show(id, lines) {
+ const elements = lines.map(line => {
+   const item = document.createElement("li");
+   item.textContent = line;
+   return item;
+ });
+ byId(id).replaceChildren(...elements);
+}
+
+function localize() {
+ document.documentElement.lang = lang;
+ for (const [key, value] of Object.entries(copy[lang])) {
+   const element = byId(key);
+   if (element) element.textContent = value;
+ }
+ const toggle = byId("language");
+ toggle.textContent = lang === "uz" ? "Русский" : "O‘zbekcha";
+ toggle.lang = lang === "uz" ? "ru" : "uz";
+ show("rates", []);
+ show("matches", []);
+}
+
+async function request(url) {
+ const response = await fetch(url);
+ if (!response.ok) throw new Error("API request failed");
+ return response.json();
+}
+
+byId("language").onclick = () => { lang = lang === "uz" ? "ru" : "uz"; localize(); };
+byId("load").onclick = async () => {
+ const locale = lang;
+ show("rates", [copy[lang].wait]);
+ try {
+   const { rates } = await request("/api/rates");
+   if (locale !== lang) return;
+   const format = new Intl.NumberFormat(lang === "uz" ? "uz-UZ" : "ru-UZ", {style:"currency",currency:"UZS"});
+   show("rates", rates.map(rate => `1 ${rate.currency} = ${format.format(rate.uzs_per_unit)} · ${rate.effective_date}`));
+ } catch {
+   if (locale === lang) show("rates", [copy[lang].error]);
+ }
+};
+byId("search").onsubmit = async event => {
+ event.preventDefault();
+ const locale = lang;
+ show("matches", [copy[lang].wait]);
+ try {
+   const query = new URLSearchParams({q:byId("question").value, lang});
+   const { matches } = await request("/api/knowledge?" + query);
+   if (locale !== lang) return;
+   show("matches", matches.length ? matches.map(item => `${item.title} — ${item.answer} [${item.id}]`) : [copy[lang].empty]);
+ } catch {
+   if (locale === lang) show("matches", [copy[lang].error]);
+ }
+};
+localize();
+</script>
+</html>
