@@ -1,4 +1,4 @@
-# Farrux Tuxtapulatov
+# NiKenguru
 
 **Fullstack dasturchi · AI Engineer**  
 Python, JavaScript, REST API, PostgreSQL · Namangan, O‘zbekiston
