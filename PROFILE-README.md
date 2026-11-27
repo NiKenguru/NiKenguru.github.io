@@ -1,4 +1,4 @@
-# Farrux Tuxtapulatov · NiKenguru
+# NiKenguru
 
 **Fullstack dasturchi va AI Engineer** · Namangan, O‘zbekiston
 
